@@ -17,17 +17,19 @@ from sklearn.model_selection import GridSearchCV
 from sklearn.metrics import classification_report
 from IPython.display import Image  
 
+import time
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt 
 
+start = time.time()
 
 #------------------------------------------------------------------------------
 # Select method
 #------------------------------------------------------------------------------
 estimators = ['logistic']
 model = 'logistic'
-num_folds = 10
+num_folds = 3
 
 print("Estimator: %s" % model)
 
@@ -36,14 +38,16 @@ print("Estimator: %s" % model)
 #------------------------------------------------------------------------------
 
 # Training (development) set
-file_train = "C:/Users/alexj/Documents/UPenn/BVoight/dataset_separate/10.31.16_T2D_noHLA_all_bed_table_grouped_train.txt"
+#file_train = "C:/Users/alexj/Documents/UPenn/BVoight/dataset_separate/10.31.16_T2D_noHLA_all_bed_table_grouped_train.txt"
+file_train = "C:/Users/alexj/Documents/UPenn/BVoight/dataset_sample/sample_train.txt"
 data_train = pd.read_table(file_train,sep='\t',header=(0))
 data_train = pd.DataFrame(data_train)
 print("Training set: %s" % file_train)
 
 
 # Test (hold out) set
-file_test = "C:/Users/alexj/Documents/UPenn/BVoight/dataset_separate/holdout_basemodel_bed_table_grouped_reformat.txt"
+#file_test = "C:/Users/alexj/Documents/UPenn/BVoight/dataset_separate/holdout_basemodel_bed_table_grouped_reformat.txt"
+file_test = "C:/Users/alexj/Documents/UPenn/BVoight/dataset_sample/sample_test_match.txt"
 data_test = pd.read_table(file_test,sep='\t',header=(0))
 data_test = pd.DataFrame(data_test)
 print("Test set: %s" % file_test)
@@ -58,8 +62,8 @@ label = data_train.columns[1]
 # Transform string labels into float (0.0, 1.0)
 train_labels = data_train.loc[:,label]
 test_labels_actual = data_test.loc[:,label]
-train_labels = map(lambda x: 1.0 if x == 'index' else 0.0, train_labels)
-test_labels_actual = map(lambda x: 1.0 if x == 'index' else 0.0, test_labels_actual)
+#train_labels = map(lambda x: 1.0 if x == 'index' else 0.0, train_labels)
+#test_labels_actual = map(lambda x: 1.0 if x == 'index' else 0.0, test_labels_actual)
 
 # Transform boolean into float (0.0, 1.0)
 train_markers = data_train.loc[:,features]
@@ -89,11 +93,15 @@ if model == 'logistic':
     # as we want to avoid overfitting.
     # This lambda term is added to the cost function in order to penalize
     # higher weighted coefficients.
-    tuned_parameters = {'penalty':['l1'], 'C':[1.0,0.5, 0.1], 'fit_intercept':[True, False],
+    lambda_ = np.linspace(0.0015, 0.003, 10)
+    tuned_parameters = {'penalty':['l1'], 'C':1/lambda_, 'fit_intercept':[True, False],
                         'random_state':[100]}
 
-#Return to later when think about performance metric************
-scores = ['precision', 'recall'] 
+#Specify scoring metric to use for truning hyper-parameters: 
+# accuracy rate of correctly labeled = (TP+TN)/(Total)
+# precision is the rate of TP = TP/(TP+FP)
+# recall is the sensitivity score = TP/(TP+FN) 
+scores = ['accuracy'] 
 
 
 for score in scores:
@@ -106,12 +114,20 @@ for score in scores:
     if model == 'logistic':
         estimator = LogisticRegression()        
     
-    clf = GridSearchCV(estimator, tuned_parameters, cv=num_folds, scoring='%s_macro' % score)    
+    clf = GridSearchCV(estimator, tuned_parameters, cv=num_folds, scoring=score)    
     clf.fit(train_markers, train_labels)
 
-    print("Best parameters set found on training set:")
+    # Best hyper-parameter set selected from Grid Search
+    print("Best hyper-parameter set found on training set:")
     print('\n')
     print(clf.best_params_)
+    print('\n')
+    
+    #Best model parameters
+    if model == 'logistic':
+        print("Best parameters (coefficients) found on training set:")
+        print(clf.best_estimator_.coef_)
+        
     print('\n')
     print("Grid scores on training set:")
     print('\n')
@@ -125,8 +141,7 @@ for score in scores:
 
     print("Detailed classification report:")
     print('\n')
-    print("The model is trained on the full training set.")
-    print("The scores are computed on the full test set.")
+    print("Performance of the best model on the test set")
     print('\n')
 
     
@@ -134,13 +149,19 @@ for score in scores:
     y_true, y_pred = y_test, clf.predict(test_markers)
     print(classification_report(y_true, y_pred))
     print('\n')
-    
-    
-
-#------------------------------------------------------------------------------
-# Performance statistics
-# Think about visualizations********************
-#------------------------------------------------------------------------------
-if model == 'logistic':
     print(clf.best_estimator_.coef_)
-    print(clf.best_estimator_.intercept_)
+    
+##------------------------------------------------------------------------------
+## Performance statistics
+## Think about visualizations********************
+##------------------------------------------------------------------------------    
+
+
+   
+end = time.time()
+temp = end-start
+hours = temp//3600
+temp = temp - 3600*hours
+minutes = temp//60
+seconds = temp - 60*minutes
+print('-------------%d:%d:%d-----------------' %(hours,minutes,seconds)) 
