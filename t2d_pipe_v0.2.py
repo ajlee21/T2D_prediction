@@ -14,7 +14,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.cross_validation import train_test_split
 from sklearn.model_selection import KFold
 from sklearn.model_selection import GridSearchCV
-from sklearn.metrics import classification_report
+from sklearn.metrics import roc_curve, auc
 from IPython.display import Image  
 
 import time
@@ -29,7 +29,8 @@ start = time.time()
 #------------------------------------------------------------------------------
 estimators = ['logistic']
 model = 'logistic'
-num_folds = 3
+num_folds = 10
+n_classes = 2
 
 print("Estimator: %s" % model)
 
@@ -38,16 +39,16 @@ print("Estimator: %s" % model)
 #------------------------------------------------------------------------------
 
 # Training (development) set
-#file_train = "C:/Users/alexj/Documents/UPenn/BVoight/dataset_separate/10.31.16_T2D_noHLA_all_bed_table_grouped_train.txt"
-file_train = "C:/Users/alexj/Documents/UPenn/BVoight/dataset_sample/sample_train.txt"
+file_train = "C:/Users/alexj/Documents/UPenn/BVoight/dataset_separate/10.31.16_T2D_noHLA_all_bed_table_grouped_train.txt"
+#file_train = "C:/Users/alexj/Documents/UPenn/BVoight/dataset_sample/sample_train.txt"
 data_train = pd.read_table(file_train,sep='\t',header=(0))
 data_train = pd.DataFrame(data_train)
 print("Training set: %s" % file_train)
 
 
 # Test (hold out) set
-#file_test = "C:/Users/alexj/Documents/UPenn/BVoight/dataset_separate/holdout_basemodel_bed_table_grouped_reformat.txt"
-file_test = "C:/Users/alexj/Documents/UPenn/BVoight/dataset_sample/sample_test_match.txt"
+file_test = "C:/Users/alexj/Documents/UPenn/BVoight/dataset_separate/holdout_basemodel_bed_table_grouped_reformat.txt"
+#file_test = "C:/Users/alexj/Documents/UPenn/BVoight/dataset_sample/sample_test_match.txt"
 data_test = pd.read_table(file_test,sep='\t',header=(0))
 data_test = pd.DataFrame(data_test)
 print("Test set: %s" % file_test)
@@ -62,8 +63,8 @@ label = data_train.columns[1]
 # Transform string labels into float (0.0, 1.0)
 train_labels = data_train.loc[:,label]
 test_labels_actual = data_test.loc[:,label]
-#train_labels = map(lambda x: 1.0 if x == 'index' else 0.0, train_labels)
-#test_labels_actual = map(lambda x: 1.0 if x == 'index' else 0.0, test_labels_actual)
+train_labels = map(lambda x: 1.0 if x == 'index' else 0.0, train_labels)
+test_labels_actual = map(lambda x: 1.0 if x == 'index' else 0.0, test_labels_actual)
 
 # Transform boolean into float (0.0, 1.0)
 train_markers = data_train.loc[:,features]
@@ -97,11 +98,13 @@ if model == 'logistic':
     tuned_parameters = {'penalty':['l1'], 'C':1/lambda_, 'fit_intercept':[True, False],
                         'random_state':[100]}
 
-#Specify scoring metric to use for truning hyper-parameters: 
+#------------------------------------------------------------------------------
+# Specify scoring metric to use for truning hyper-parameters: 
 # accuracy rate of correctly labeled = (TP+TN)/(Total)
 # precision is the rate of TP = TP/(TP+FP)
-# recall is the sensitivity score = TP/(TP+FN) 
-scores = ['accuracy'] 
+# recall is the sensitivity score = TP/(TP+FN)
+#------------------------------------------------------------------------------ 
+scores = ['roc_auc'] 
 
 
 for score in scores:
@@ -138,26 +141,37 @@ for score in scores:
         print("%0.3f (+/-%0.03f) for %r"
               % (mean, std * 2, params))
     print('\n')
+   
 
-    print("Detailed classification report:")
-    print('\n')
+    #-------------------------------------------------------------------------
+    # Performance statistics
+    # Think about visualizations********************
+    # Curve per class????
+    #-------------------------------------------------------------------------       
     print("Performance of the best model on the test set")
     print('\n')
-
-    
     y_test = np.array(test_labels_actual)
     y_true, y_pred = y_test, clf.predict(test_markers)
-    print(classification_report(y_true, y_pred))
-    print('\n')
-    print(clf.best_estimator_.coef_)
+
+    fpr, tpr, thresholds = roc_curve(y_true, y_pred)
+    roc_auc = auc(fpr, tpr)
     
-##------------------------------------------------------------------------------
-## Performance statistics
-## Think about visualizations********************
-##------------------------------------------------------------------------------    
-
-
-   
+    plt.figure()
+    lw = 2
+    plt.plot(fpr, tpr, color='darkorange',
+             lw=lw)
+    plt.plot([0, 1], [0, 1], color='navy', lw=lw, 
+             label='ROC curve (area = %0.2f)' % roc_auc, linestyle='--')
+    plt.xlim([0.0, 1.0])
+    plt.ylim([0.0, 1.05])
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.title('ROC using %s'% model)
+    plt.legend(loc="lower right")
+    plt.show()
+    
+#Save
+ 
 end = time.time()
 temp = end-start
 hours = temp//3600
