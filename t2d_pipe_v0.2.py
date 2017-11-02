@@ -39,7 +39,7 @@ print("Estimator: %s" % model)
 #------------------------------------------------------------------------------
 
 # Training (development) set
-file_train = "C:/Users/alexj/Documents/UPenn/BVoight/dataset_separate/10.31.16_T2D_noHLA_all_bed_table_grouped_train.txt"
+file_train = "C:/Users/alexj/Documents/UPenn/BVoight/dataset_separate/10.31.16_T2D_noHLA_all_bed_table_grouped.txt"
 #file_train = "C:/Users/alexj/Documents/UPenn/BVoight/dataset_sample/sample_train.txt"
 data_train = pd.read_table(file_train,sep='\t',header=(0))
 data_train = pd.DataFrame(data_train)
@@ -47,7 +47,7 @@ print("Training set: %s" % file_train)
 
 
 # Test (hold out) set
-file_test = "C:/Users/alexj/Documents/UPenn/BVoight/dataset_separate/holdout_basemodel_bed_table_grouped_reformat.txt"
+file_test = "C:/Users/alexj/Documents/UPenn/BVoight/dataset_separate/holdout_basemodel_bed_table_grouped_rm_tr_ctrls_reformat.txt"
 #file_test = "C:/Users/alexj/Documents/UPenn/BVoight/dataset_sample/sample_test_match.txt"
 data_test = pd.read_table(file_test,sep='\t',header=(0))
 data_test = pd.DataFrame(data_test)
@@ -60,7 +60,7 @@ nCols = len(data_train.columns)
 features = list(data_train.columns)[2:nCols]
 label = data_train.columns[1]
 
-# Transform string labels into float (0.0, 1.0)
+# Transform string labels ('index', 'control') into float (0.0, 1.0)
 train_labels = data_train.loc[:,label]
 test_labels_actual = data_test.loc[:,label]
 train_labels = map(lambda x: 1.0 if x == 'index' else 0.0, train_labels)
@@ -94,8 +94,10 @@ if model == 'logistic':
     # as we want to avoid overfitting.
     # This lambda term is added to the cost function in order to penalize
     # higher weighted coefficients.
-    lambda_ = np.linspace(0.0015, 0.003, 10)
-    tuned_parameters = {'penalty':['l1'], 'C':1/lambda_, 'fit_intercept':[True, False],
+    
+    regularization = np.linspace(0.0015, 0.003, 10)
+
+    tuned_parameters = {'penalty':['l1'], 'fit_intercept':[True, False],
                         'random_state':[100]}
 
 #------------------------------------------------------------------------------
@@ -144,33 +146,39 @@ for score in scores:
    
 
     #-------------------------------------------------------------------------
-    # Performance statistics
-    # Think about visualizations********************
-    # Curve per class????
+    # Compute ROC curve and AUC for each class label
+    # ROC curve indicates how the cost:benefit ratio (measured by the tradeoff
+    # of TP and FP rates) varies as the decision boundary of the estimator is changed
     #-------------------------------------------------------------------------       
     print("Performance of the best model on the test set")
     print('\n')
     y_test = np.array(test_labels_actual)
-    y_true, y_pred = y_test, clf.predict(test_markers)
+    y_true, y_pred = y_test, clf.predict_proba(test_markers)
 
-    fpr, tpr, thresholds = roc_curve(y_true, y_pred)
-    roc_auc = auc(fpr, tpr)
+    # Compute ROC curve and ROC area for each class
+    fpr = dict()
+    tpr = dict()
+    roc_auc = dict()
+    for i in range(n_classes):
+        fpr[i], tpr[i], _ = roc_curve(y_true, y_pred[:, i])
+        roc_auc[i] = auc(fpr[i], tpr[i])
     
     plt.figure()
     lw = 2
-    plt.plot(fpr, tpr, color='darkorange',
-             lw=lw)
-    plt.plot([0, 1], [0, 1], color='navy', lw=lw, 
-             label='ROC curve (area = %0.2f)' % roc_auc, linestyle='--')
-    plt.xlim([0.0, 1.0])
-    plt.ylim([0.0, 1.05])
-    plt.xlabel('False Positive Rate')
-    plt.ylabel('True Positive Rate')
-    plt.title('ROC using %s'% model)
-    plt.legend(loc="lower right")
+    colors = ['darkorange', 'magenta']
+    classes = ['control', 'disease']
+    for i in range(n_classes):
+        plt.plot(fpr[i], tpr[i], color=colors[i],
+             lw=lw, label='ROC curve (area = %0.2f) for class = %s' % (roc_auc[i], classes[i]))
+        plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--')
+        plt.xlim([0.0, 1.0])
+        plt.ylim([0.0, 1.05])
+        plt.xlabel('False Positive Rate')
+        plt.ylabel('True Positive Rate')
+        plt.title('ROC using %s'% model)
+        plt.legend(loc="lower right")
     plt.show()
-    
-#Save
+    plt.savefig("C:/Users/alexj/Documents/UPenn/BVoight/dataset_separate/ROC.jpg")
  
 end = time.time()
 temp = end-start
