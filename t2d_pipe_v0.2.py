@@ -7,11 +7,12 @@ Created on Mon Oct 09 15:54:40 2017
 #------------------------------------------------------------------------------
 # ReadMe
 # Pipeline to predict T2D associative loci
-# Data matrix (loci x in regulatory features)
+# Data matrix (loci x regulatory features)
 #------------------------------------------------------------------------------
 
 from sklearn.linear_model import LogisticRegression
 from sklearn.cross_validation import train_test_split
+from sklearn.metrics import confusion_matrix
 from sklearn.model_selection import KFold
 from sklearn.model_selection import GridSearchCV
 from sklearn.metrics import roc_curve, auc
@@ -30,7 +31,6 @@ start = time.time()
 estimators = ['logistic']
 model = 'logistic'
 num_folds = 10
-n_classes = 2
 
 print("Estimator: %s" % model)
 
@@ -94,10 +94,8 @@ if model == 'logistic':
     # as we want to avoid overfitting.
     # This lambda term is added to the cost function in order to penalize
     # higher weighted coefficients.
-    
-    regularization = np.linspace(0.0015, 0.003, 10)
 
-    tuned_parameters = {'penalty':['l1'], 'fit_intercept':[True, False],
+    tuned_parameters = {'C': np.linspace(1e-10,1, 20), 'penalty':['l1'], 
                         'random_state':[100]}
 
 #------------------------------------------------------------------------------
@@ -154,22 +152,27 @@ for score in scores:
     print('\n')
     y_test = np.array(test_labels_actual)
     y_true, y_pred = y_test, clf.predict_proba(test_markers)
+    y_pred_labels = clf.predict(test_markers)
+    C = confusion_matrix(y_true, y_pred_labels)
+    print("Confusion matrix:"
+        "[TN|TP]"
+        "[FN|FP]")
+    print(C)
 
     # Compute ROC curve and ROC area for each class
     fpr = dict()
     tpr = dict()
     roc_auc = dict()
-    for i in range(n_classes):
-        fpr[i], tpr[i], _ = roc_curve(y_true, y_pred[:, i])
+    for i in range(1):
+        fpr[i], tpr[i], _ = roc_curve(y_true, y_pred[:, i+1])
         roc_auc[i] = auc(fpr[i], tpr[i])
     
     plt.figure()
     lw = 2
-    colors = ['darkorange', 'magenta']
-    classes = ['control', 'disease']
-    for i in range(n_classes):
+    colors = ["darkorange", "magenta"]
+    for i in range(1):
         plt.plot(fpr[i], tpr[i], color=colors[i],
-             lw=lw, label='ROC curve (area = %0.2f) for class = %s' % (roc_auc[i], classes[i]))
+             lw=lw, label='ROC curve (area = %0.2f) for LR l1' % (roc_auc[i]))
         plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--')
         plt.xlim([0.0, 1.0])
         plt.ylim([0.0, 1.05])
@@ -177,8 +180,16 @@ for score in scores:
         plt.ylabel('True Positive Rate')
         plt.title('ROC using %s'% model)
         plt.legend(loc="lower right")
-    plt.show()
     plt.savefig("C:/Users/alexj/Documents/UPenn/BVoight/dataset_separate/ROC.jpg")
+    plt.show()
+    
+    #-------------------------------------------------------------------------   
+    # Output important features
+    #-------------------------------------------------------------------------
+    if model == 'logistic':
+        trained_coeff = pd.DataFrame(zip(clf.best_estimator_.coef_[0], features), columns=["Weight", "Feature"])
+        trained_coeff.to_csv("C:/Users/alexj/Documents/UPenn/BVoight/dataset_separate/coeff.csv", sep=',')
+    
  
 end = time.time()
 temp = end-start
