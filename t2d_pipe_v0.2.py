@@ -93,8 +93,7 @@ if model == 'logistic':
     # C is the inverse regularization parameter (1/lambda).  Lower C = high regularization.
     # Lambda (regularization) is the penalty against the complexity of the model 
     # as we want to avoid overfitting.
-    # This lambda term is added to the cost function in order to penalize
-    # higher weighted coefficients.
+    # This C is added to the logistic function instead of the cost function
 
     tuned_parameters = {'C': np.linspace(1e-10,1, 20), 'penalty':['l1'], 
                         'random_state':[100]}
@@ -191,7 +190,7 @@ for i in range(len(scores)):
     #-------------------------------------------------------------------------
     if model == 'logistic':
         trained_coeff = pd.DataFrame(zip(clf.best_estimator_.coef_[0], features), columns=["Weight", "Feature"])
-        trained_coeff.to_csv("C:/Users/alexj/Documents/UPenn/BVoight/dataset_separate/coeff.csv", sep=',')
+        trained_coeff.to_csv("C:/Users/alexj/Documents/UPenn/BVoight/dataset_separate/coeff"+scores[i]+".csv", sep=',')
 
 #------------------------------------------------------------------------------   
 # Plotting

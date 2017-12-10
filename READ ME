@@ -1,0 +1,45 @@
+READ ME
+
+Written by Alexandra Lee during rotation in Ben Voight's lab (31AUG2017 - 5DEC 2017)
+
+SOFTWARE:
+Python 2.7
+Sklearn 0.18.1
+
+Note:  All scripts were locally run on my machine (Windows 10 8.00 GB RAM Core(TM) i7 CPU)
+
+CODE VERSIONS:
+
+t2d_pipe_v0.2.py
+	Estimator(s):  Logistic regression only
+	Random seed:  Only consider a single random seed
+	Evaluation metric:  f1 and auc (able to add additional metrics if desired)
+	Output:  
+		*User will need to modify the file path at lines: 193, 211, 223
+		Figure 1:  ROC curve per evaluation metric for logistic regression
+		Figure 2:  Precision-recall curve per evaluation metric for logistic regression
+		Learned coefficients for each evaluation metric saved to coeff_[eval metric]
+	Runtime: ~30 minutes
+
+t2d_pipe_v0.3.py
+	Estimator(s):  Logistic regression only
+	Random seed: Allow user to pass in multiple seed values
+	Evaluation metric:  f1 and auc (able to add additional metrics if desired)
+	Output:  
+		*User will need to modify the file path at lines: 200, 220, 234
+		Figure 1:  ROC curve per seed for logistic regression using a given evaluation metric
+		Figure 2:  Precision-recall curve per seed for logistic regression using a given evaluation metric
+		Learned coefficients for each seed and each evaluation metric saved to coeff_seed[##]_eval[eval metric]
+	Runtime: ~2.5 hours
+
+t2d_pipe_v0.4.py
+	Estimator(s):  Logistic regression and random forest (flexible, user can add additional learners)
+	Random seed: Only consider a single random seed
+	Evaluation metric:  f1 and auc (able to add additional metrics if desired)
+	Output:  
+		*User will need to modify the file path at lines: 204, 218, 238, 252
+		Figure 1:  ROC curve per learner using a given evaluation metric
+		Figure 2:  Precision-recall curve per learner using a given evaluation metric
+		Learned coefficients for each seed and each evaluation metric saved to coeff_[learner]_[eval metric]
+	Runtime: ~3 hours	
+

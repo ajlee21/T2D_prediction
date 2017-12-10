@@ -111,15 +111,14 @@ for i in range(len(scores)):
             # C is the inverse regularization parameter (1/lambda).  Lower C = high regularization.
             # Lambda (regularization) is the penalty against the complexity of the model 
             # as we want to avoid overfitting.
-            # This lambda term is added to the cost function in order to penalize
-            # higher weighted coefficients.
+            # C is added to the logistic function instead of the penalty function
             tuned_parameters = {'C': np.linspace(1e-10,1, 20), 'penalty':['l1'], 
                             'random_state': [seeds[s]]}
             
 
-	     #------------------------------------------------------------------------------
-	     # Train model
-	     #
+	    #------------------------------------------------------------------------------
+	    # Train model
+	    #
         # K-fold cross validation and hyper parameter tuning suing GridSearchCV:
         #
         # 1.  Pick a set of hyper-parameters from the grid (representing the possible 
