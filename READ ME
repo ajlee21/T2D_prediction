@@ -30,7 +30,7 @@ t2d_pipe_v0.3.py
 		Figure 1:  ROC curve per seed for logistic regression using a given evaluation metric
 		Figure 2:  Precision-recall curve per seed for logistic regression using a given evaluation metric
 		Learned coefficients for each seed and each evaluation metric saved to coeff_seed[##]_eval[eval metric]
-	Runtime: ~2.5 hours
+	Runtime: ~2.5 hours (using 10 seeds)
 
 t2d_pipe_v0.4.py
 	Estimator(s):  Logistic regression and random forest (flexible, user can add additional learners)

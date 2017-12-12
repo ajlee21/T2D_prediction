@@ -34,7 +34,7 @@ start = time.time()
 #------------------------------------------------------------------------------
 # Select method
 #------------------------------------------------------------------------------
-estimators = ['logisticRegression', 'randomForest']
+estimators = ['logisticRegression', 'randomForest'] #user defined names
 num_folds = 10
 
 #------------------------------------------------------------------------------
